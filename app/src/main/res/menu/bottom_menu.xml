@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/xkcd"
+        android:title="XKCD"
+        android:icon="@drawable/xkcd_logo"/>
+
+    <item
+        android:id="@+id/ftm"
+        android:title="FTM"
+        android:icon="@drawable/ftm_icon"/>
+
+    <item
+        android:id="@+id/dank_memes"
+        android:title="DankMemes"
+        android:icon="@drawable/reddit_icon"/>
+
+    <item
+        android:id="@+id/saved"
+        android:title="Saved"
+        android:icon="@drawable/baseline_library_24"/>
+
+    <item
+        android:id="@+id/config"
+        android:title="Config"
+        android:icon="@drawable/config_icon"/>
+
+</menu>
