@@ -3,22 +3,22 @@
 
     <item
         android:id="@+id/xkcd"
-        android:title="XKCD"
+        android:title="@string/xkcd"
         android:icon="@drawable/xkcd_logo"/>
 
     <item
         android:id="@+id/ftm"
-        android:title="FTM"
+        android:title="@string/ftm"
         android:icon="@drawable/ftm_icon"/>
 
     <item
         android:id="@+id/dank_memes"
-        android:title="DankMemes"
+        android:title="@string/dankmemes"
         android:icon="@drawable/reddit_icon"/>
 
     <item
         android:id="@+id/config"
-        android:title="Config"
+        android:title="@string/config"
         android:icon="@drawable/config_icon"/>
 
 </menu>

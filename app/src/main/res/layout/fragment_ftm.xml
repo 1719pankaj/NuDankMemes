@@ -14,12 +14,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="ImageContrastCheck"
         tools:src="@tools:sample/avatars" />
 
     <Button
         android:id="@+id/prevBT"
         android:layout_width="100dp"
         android:layout_height="0dp"
+        android:contentDescription="@string/previous_image"
         android:background="@android:color/transparent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -29,6 +31,7 @@
         android:id="@+id/nextBT"
         android:layout_width="100dp"
         android:layout_height="0dp"
+        android:contentDescription="@string/next_image"
         android:background="@android:color/transparent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -38,19 +41,23 @@
         android:id="@+id/saveBT"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/baseline_save_24"
         android:layout_margin="16dp"
+        android:contentDescription="@string/save_button"
+        android:src="@drawable/baseline_save_24"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="RedundantDescriptionCheck" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/shareBT"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
+        android:contentDescription="@string/share_button"
         android:src="@drawable/baseline_share_24"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="RedundantDescriptionCheck" />
 
     <ProgressBar
         android:id="@+id/progressBar"

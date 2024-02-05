@@ -2,7 +2,6 @@ package com.example.nudankmemes.fragments
 
 import android.content.ContentValues
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
@@ -13,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
-import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -21,7 +19,6 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.example.nudankmemes.R
-import com.example.nudankmemes.data.BackstackAndKeys
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditcurrentMemeIndex
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditmemeBackStack
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditnextMemeUrl
@@ -35,7 +32,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,7 +40,7 @@ class RedditFragment : Fragment() {
 
     private lateinit var binding: FragmentRedditBinding
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentRedditBinding.inflate(inflater, container, false)
         val view = binding.root
 
@@ -178,7 +174,7 @@ class RedditFragment : Fragment() {
     }
 
 
-    fun getNextComic() {
+    private fun getNextComic() {
         CoroutineScope(Dispatchers.Main).launch {
             val memeUrls: List<String>
             if (RedditcurrentMemeIndex < RedditmemeBackStack.size - 1) {
@@ -206,7 +202,7 @@ class RedditFragment : Fragment() {
         }
     }
 
-    fun goBack() {
+    private fun goBack() {
         if (RedditcurrentMemeIndex > 0) {
             // If we're not at the start of the backstack, move backward
             RedditcurrentMemeIndex--
@@ -222,7 +218,7 @@ class RedditFragment : Fragment() {
         }
     }
 
-    suspend fun getRandomMemes(): List<String> {
+    private suspend fun getRandomMemes(): List<String> {
         return withContext(Dispatchers.IO) {
             val url = URL("https://meme-api.com/gimme/3")
             val connection = url.openConnection() as HttpURLConnection
@@ -243,13 +239,13 @@ class RedditFragment : Fragment() {
     }
 
 
-    fun preloadNextMemes() {
+    private fun preloadNextMemes() {
         CoroutineScope(Dispatchers.IO).launch {
             RedditnextMemeUrls = getRandomMemes()
         }
     }
 
-    fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
+    private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
             binding.progressBar.visibility = View.VISIBLE
             Glide.with(this@RedditFragment)

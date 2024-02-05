@@ -8,7 +8,6 @@ class BackstackAndKeys {
         var FMTcurrentMemeIndex = -1
         var FMTnextMemeUrl: String? = null
 
-        var RedditFirstRunFlag = true
         val RedditmemeBackStack = ArrayList<String>()
         var RedditcurrentMemeIndex = -1
         var RedditnextMemeUrl: String? = null

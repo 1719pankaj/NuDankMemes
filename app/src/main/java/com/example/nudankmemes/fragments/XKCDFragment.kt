@@ -1,9 +1,7 @@
 package com.example.nudankmemes.fragments
 
-import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
@@ -14,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
-import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -35,7 +32,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
@@ -44,8 +40,7 @@ class XKCDFragment : Fragment() {
 
     private lateinit var binding: FragmentXkcdBinding
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentXkcdBinding.inflate(layoutInflater)
         val view = binding.root
 
@@ -183,7 +178,7 @@ class XKCDFragment : Fragment() {
         }
     }
 
-    fun getNextComic() {
+    private fun getNextComic() {
         CoroutineScope(Dispatchers.Main).launch {
             val imageUrl: String
             if (XKCDcurrentMemeIndex < XKCDmemeBackStack.size - 1) {
@@ -207,7 +202,7 @@ class XKCDFragment : Fragment() {
     }
 
 
-    fun goBack() {
+    private fun goBack() {
         if (XKCDcurrentMemeIndex > 0) {
             // If we're not at the start of the backstack, move backward
             XKCDcurrentMemeIndex--
@@ -223,19 +218,19 @@ class XKCDFragment : Fragment() {
         }
     }
 
-    suspend fun fetchNewMeme(): String {
+    private suspend fun fetchNewMeme(): String {
         val latestComicNum = fetchLatestComicNum()
         val randomComicNum = (1..latestComicNum).random()
         return fetchComicImageUrl(randomComicNum)
     }
 
-    fun preloadNextMeme() {
+    private fun preloadNextMeme() {
         CoroutineScope(Dispatchers.IO).launch {
             XKCDnextMemeUrl = fetchNewMeme()
         }
     }
 
-    suspend fun fetchLatestComicNum(): Int {
+    private suspend fun fetchLatestComicNum(): Int {
         return withContext(Dispatchers.IO) {
             val url = URL("https://xkcd.com/info.0.json")
             val connection = url.openConnection() as HttpURLConnection
@@ -249,7 +244,7 @@ class XKCDFragment : Fragment() {
         }
     }
 
-    suspend fun fetchComicImageUrl(comicNum: Int): String {
+    private suspend fun fetchComicImageUrl(comicNum: Int): String {
         return withContext(Dispatchers.IO) {
             val url = URL("https://xkcd.com/$comicNum/info.0.json")
             val connection = url.openConnection() as HttpURLConnection
@@ -263,7 +258,7 @@ class XKCDFragment : Fragment() {
         }
     }
 
-    fun getLatestComic() {
+    private fun getLatestComic() {
         CoroutineScope(Dispatchers.Main).launch {
             val latestComicNum = fetchLatestComicNum()
             val imageUrl = fetchComicImageUrl(latestComicNum)
@@ -273,7 +268,7 @@ class XKCDFragment : Fragment() {
         }
     }
 
-    fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
+    private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
             binding.progressBar.visibility = View.VISIBLE
             Glide.with(this@XKCDFragment)
