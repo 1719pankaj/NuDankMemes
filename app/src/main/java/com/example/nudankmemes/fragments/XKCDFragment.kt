@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -259,14 +260,15 @@ class XKCDFragment : Fragment() {
     }
 
     private fun getLatestComic() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val latestComicNum = fetchLatestComicNum()
-            val imageUrl = fetchComicImageUrl(latestComicNum)
-            XKCDmemeBackStack.add(imageUrl) // Add the meme to the backstack
-            loadWithGlide(imageUrl, binding.imageView)
-            preloadNextMeme()
-        }
+    CoroutineScope(Dispatchers.Main).launch {
+        val latestComicNum = fetchLatestComicNum()
+        val imageUrl = fetchComicImageUrl(latestComicNum)
+        XKCDmemeBackStack.add(imageUrl) // Add the meme to the backstack
+        XKCDcurrentMemeIndex = XKCDmemeBackStack.size - 1 // Update the current meme index
+        loadWithGlide(imageUrl, binding.imageView)
+        preloadNextMeme()
     }
+}
 
     private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
