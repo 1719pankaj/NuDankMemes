@@ -3,6 +3,7 @@ package com.example.nudankmemes
 
 
 import android.os.Bundle
+import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -11,7 +12,6 @@ import com.example.nudankmemes.databinding.ActivityMainBinding
 import com.example.nudankmemes.fragments.ConfigFragment
 import com.example.nudankmemes.fragments.FtmFragment
 import com.example.nudankmemes.fragments.RedditFragment
-import com.example.nudankmemes.fragments.SavedFragment
 import com.example.nudankmemes.fragments.XKCDFragment
 
 
@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.xkcd -> replaceFragment(XKCDFragment())
                 R.id.ftm -> replaceFragment(FtmFragment())
-                R.id.saved -> replaceFragment(SavedFragment())
                 R.id.dank_memes -> replaceFragment(RedditFragment())
                 R.id.config -> replaceFragment(ConfigFragment())
             }

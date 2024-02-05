@@ -17,11 +17,6 @@
         android:icon="@drawable/reddit_icon"/>
 
     <item
-        android:id="@+id/saved"
-        android:title="Saved"
-        android:icon="@drawable/baseline_library_24"/>
-
-    <item
         android:id="@+id/config"
         android:title="Config"
         android:icon="@drawable/config_icon"/>

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -16,6 +17,10 @@ import androidx.core.content.FileProvider
 import androidx.core.graphics.drawable.toBitmap
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.example.nudankmemes.R
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDFirstRunFlag
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDcurrentMemeIndex
@@ -44,12 +49,18 @@ class XKCDFragment : Fragment() {
         binding = FragmentXkcdBinding.inflate(layoutInflater)
         val view = binding.root
 
+        binding.progressBar.isIndeterminate = true
         binding.imageView.setImageResource(R.drawable.holdup)
 
-        if(XKCDFirstRunFlag) {
+        if (XKCDmemeBackStack.isNotEmpty() && XKCDcurrentMemeIndex >= 0) {
+            // If there's a meme in the backstack, display it
+            loadWithGlide(XKCDmemeBackStack[XKCDcurrentMemeIndex], binding.imageView)
+        } else if (XKCDFirstRunFlag) {
+            // If it's the first run, fetch the latest comic
             getLatestComic()
             XKCDFirstRunFlag = false
         } else {
+            // Otherwise, fetch the next comic
             getNextComic()
         }
 
@@ -74,38 +85,51 @@ class XKCDFragment : Fragment() {
     }
 
     private fun saveCurrentMeme() {
-    val drawable = binding.imageView.drawable
-    if (drawable == null) {
-        Toast.makeText(context, "No image to save", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    val bitmap = drawable.toBitmap()
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "image.png")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-            put(MediaStore.Images.Media.RELATIVE_PATH, "pictures/NuDankMemes/")
+        val drawable = binding.imageView.drawable
+        if (drawable == null) {
+            Toast.makeText(context, "No image to save", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        val uri = context?.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-
-        context?.contentResolver?.openOutputStream(uri!!)?.use { outputStream ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+        val imageUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
+        val fileExtension = when {
+            imageUrl.endsWith(".gif") -> "gif"
+            imageUrl.endsWith(".png") -> "png"
+            else -> "png"
         }
-    } else {
-        val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
-        val file = File("$externalStorageDirectory/pictures/NuDankMemes", "image.png")
-        file.parentFile?.mkdirs()
-        val outStream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outStream)
-        outStream.flush()
-        outStream.close()
-    }
+        val fileName = "image.$fileExtension"
+        val mimeType = "image/$fileExtension"
 
-    Toast.makeText(context, "Image saved successfully", Toast.LENGTH_SHORT).show()
-}
+        CoroutineScope(Dispatchers.IO).launch {
+            val file = Glide.with(requireContext())
+                .asFile()
+                .load(imageUrl)
+                .submit()
+                .get()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "pictures/NuDankMemes/")
+                }
+
+                val uri = context?.contentResolver?.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                context?.contentResolver?.openOutputStream(uri!!)?.use { outputStream ->
+                    file.inputStream().copyTo(outputStream)
+                }
+            } else {
+                val externalStorageDirectory = Environment.getExternalStorageDirectory().toString()
+                val outputFile = File("$externalStorageDirectory/pictures/NuDankMemes", fileName)
+                outputFile.parentFile?.mkdirs()
+                file.copyTo(outputFile, overwrite = true)
+            }
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Image saved successfully", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     private fun shareCurrentMeme() {
         try {
@@ -115,27 +139,45 @@ class XKCDFragment : Fragment() {
                 return
             }
 
-            val bitmap = drawable.toBitmap()
-            val cachePath = File(context?.cacheDir, "images")
-            cachePath.mkdirs()
-            val file = File(cachePath, "image.png")
-            val stream = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            stream.close()
-
-            val contentUri = FileProvider.getUriForFile(requireContext(), "com.example.nudankmemes.provider", file)
-            if (contentUri == null) {
-                Toast.makeText(context, "Failed to create content URI", Toast.LENGTH_SHORT).show()
-                return
+            val imageUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
+            val fileExtension = when {
+                imageUrl.endsWith(".gif") -> "gif"
+                imageUrl.endsWith(".png") -> "png"
+                else -> "png"
             }
+            val fileName = "image.$fileExtension"
 
-            val shareIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                setDataAndType(contentUri, context?.contentResolver?.getType(contentUri))
-                putExtra(Intent.EXTRA_STREAM, contentUri)
+            CoroutineScope(Dispatchers.IO).launch {
+                val file = Glide.with(requireContext())
+                    .asFile()
+                    .load(imageUrl)
+                    .submit()
+                    .get()
+
+                val cachePath = File(context?.cacheDir, "images")
+                cachePath.mkdirs()
+                val outputFile = File(cachePath, fileName)
+                file.copyTo(outputFile, overwrite = true)
+
+                val contentUri = FileProvider.getUriForFile(requireContext(), "com.example.nudankmemes.provider", outputFile)
+                if (contentUri == null) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Failed to create content URI", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                val shareIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    setDataAndType(contentUri, context?.contentResolver?.getType(contentUri))
+                    putExtra(Intent.EXTRA_STREAM, contentUri)
+                }
+
+                withContext(Dispatchers.Main) {
+                    startActivity(Intent.createChooser(shareIntent, "Share image via"))
+                }
             }
-            startActivity(Intent.createChooser(shareIntent, "Share image via"))
         } catch (e: Exception) {
             Toast.makeText(context, "Failed to share image: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -233,10 +275,33 @@ class XKCDFragment : Fragment() {
 
     fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
+            binding.progressBar.visibility = View.VISIBLE
             Glide.with(this@XKCDFragment)
                 .load(imageUrl)
                 .placeholder(R.drawable.xkcd_waiting)
                 .fitCenter()
+                .listener(object : RequestListener<Drawable> {
+                    override fun onLoadFailed(
+                        e: GlideException?,
+                        model: Any?,
+                        target: Target<Drawable>?,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        binding.progressBar.visibility = View.GONE
+                        return false
+                    }
+
+                    override fun onResourceReady(
+                        resource: Drawable?,
+                        model: Any?,
+                        target: Target<Drawable>?,
+                        dataSource: DataSource?,
+                        isFirstResource: Boolean
+                    ): Boolean {
+                        binding.progressBar.visibility = View.GONE
+                        return false
+                    }
+                })
                 .into(imageView)
         }
     }
