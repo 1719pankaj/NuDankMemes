@@ -174,20 +174,24 @@ class RedditFragment : Fragment() {
 
     private fun getNextComic() {
         CoroutineScope(Dispatchers.Main).launch {
-            val memeUrls: List<String>
+            var memeUrls: List<String>
             if (RedditcurrentMemeIndex < RedditmemeBackStack.size - 1) {
                 // If we're not at the end of the backstack, move forward
                 RedditcurrentMemeIndex++
                 loadWithGlide(RedditmemeBackStack[RedditcurrentMemeIndex], binding.imageView)
             } else {
                 // If we're at the end of the backstack, use the preloaded memes if available
-                memeUrls = getRandomMemes()
-                for (memeUrl in memeUrls) {
-                    if (!RedditmemeBackStack.contains(memeUrl)) {
-                        RedditmemeBackStack.add(memeUrl) // Add the meme to the backstack
-                        RedditcurrentMemeIndex = RedditmemeBackStack.size - 1
-                        loadWithGlide(memeUrl, binding.imageView)
-                        break
+                var uniqueMemeFound = false
+                while (!uniqueMemeFound) {
+                    memeUrls = getRandomMemes(3)
+                    for (memeUrl in memeUrls) {
+                        if (!RedditmemeBackStack.contains(memeUrl)) {
+                            RedditmemeBackStack.add(memeUrl) // Add the meme to the backstack
+                            RedditcurrentMemeIndex = RedditmemeBackStack.size - 1
+                            loadWithGlide(memeUrl, binding.imageView)
+                            uniqueMemeFound = true
+                            break
+                        }
                     }
                 }
             }
@@ -206,9 +210,9 @@ class RedditFragment : Fragment() {
 
     }
 
-    private suspend fun getRandomMemes(): List<String> {
+    private suspend fun getRandomMemes(count: Int): List<String> {
         return withContext(Dispatchers.IO) {
-            val url = URL("https://meme-api.com/gimme/3")
+            val url = URL("https://meme-api.com/gimme/$count")
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             val reader = BufferedReader(InputStreamReader(connection.inputStream))
