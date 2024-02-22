@@ -17,14 +17,15 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.example.nudankmemes.R
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.FMTcurrentMemeIndex
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.FMTfirstRunFlag
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.FMTmemeBackStack
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.FMTnextMemeUrl
+import com.example.nudankmemes.data.BackstackAndKeys
+import com.example.nudankmemes.data.BackstackAndKeys.Companion.FTMcurrentMemeIndex
+import com.example.nudankmemes.data.BackstackAndKeys.Companion.FTMfirstRunFlag
+import com.example.nudankmemes.data.BackstackAndKeys.Companion.FTMmemeBackStack
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.keys
 import com.example.nudankmemes.databinding.FragmentFtmBinding
 import com.github.chrisbanes.photoview.PhotoView
@@ -44,14 +45,15 @@ import kotlin.random.Random
 class FtmFragment : Fragment() {
 
     private lateinit var binding: FragmentFtmBinding
+    private var isLoading = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentFtmBinding.inflate(layoutInflater)
         val view = binding.root
 
-        if(FMTfirstRunFlag) {
+        if(FTMfirstRunFlag) {
             binding.progressBar.visibility = View.VISIBLE
-            FMTfirstRunFlag = false
+            FTMfirstRunFlag = false
         } else {
             binding.progressBar.visibility = View.GONE
         }
@@ -64,54 +66,70 @@ class FtmFragment : Fragment() {
                 keys = fetchKeys()
                 Log.d("FtmFragment", "Keys: $keys")
                 binding.progressBar.visibility = View.GONE
-                if (FMTmemeBackStack.isNotEmpty() && FMTcurrentMemeIndex >= 0) {
+                if (FTMmemeBackStack.isNotEmpty() && FTMcurrentMemeIndex >= 0) {
                     // If there's a meme in the backstack, display it
-                    loadWithGlide(FMTmemeBackStack[FMTcurrentMemeIndex], binding.imageView)
+                    loadWithGlide(FTMmemeBackStack[FTMcurrentMemeIndex], binding.imageView)
                 } else {
                     // Otherwise, fetch the next comic
                     getNextComic()
                 }
 
                 binding.nextBT.setOnClickListener {
-                    getNextComic()
+                    if (!isLoading) {
+                        getNextComic()
+                    }
                 }
 
                 binding.prevBT.setOnClickListener {
-                    goBack()
+                    if (!isLoading) {
+                        goBack()
+                    }
                 }
 
                 binding.shareBT.setOnClickListener {
-                    shareCurrentMeme()
+                    if (!isLoading) {
+                        shareCurrentMeme()
+                    }
                 }
 
                 binding.saveBT.setOnClickListener {
-                    saveCurrentMeme()
+                    if (!isLoading) {
+                        saveCurrentMeme()
+                    }
                 }
             }
         } else {
 
-            if (FMTmemeBackStack.isNotEmpty() && FMTcurrentMemeIndex >= 0) {
+            if (FTMmemeBackStack.isNotEmpty() && FTMcurrentMemeIndex >= 0) {
                 // If there's a meme in the backstack, display it
-                loadWithGlide(FMTmemeBackStack[FMTcurrentMemeIndex], binding.imageView)
+                loadWithGlide(FTMmemeBackStack[FTMcurrentMemeIndex], binding.imageView)
             } else {
                 // Otherwise, fetch the next comic
                 getNextComic()
             }
 
             binding.nextBT.setOnClickListener {
-                getNextComic()
+                if (!isLoading) {
+                    getNextComic()
+                }
             }
 
             binding.prevBT.setOnClickListener {
-                goBack()
+                if (!isLoading) {
+                    goBack()
+                }
             }
 
             binding.shareBT.setOnClickListener {
-                shareCurrentMeme()
+                if (!isLoading) {
+                    shareCurrentMeme()
+                }
             }
 
             binding.saveBT.setOnClickListener {
-                saveCurrentMeme()
+                if (!isLoading) {
+                    saveCurrentMeme()
+                }
             }
         }
 
@@ -121,51 +139,34 @@ class FtmFragment : Fragment() {
     private fun getNextComic() {
         CoroutineScope(Dispatchers.Main).launch {
             val imageUrl: String
-            if (FMTcurrentMemeIndex < FMTmemeBackStack.size - 1) {
+            if (FTMcurrentMemeIndex < FTMmemeBackStack.size - 1) {
                 // If we're not at the end of the backstack, move forward
-                FMTcurrentMemeIndex++
-                imageUrl = FMTmemeBackStack[FMTcurrentMemeIndex]
+                FTMcurrentMemeIndex++
+                imageUrl = FTMmemeBackStack[FTMcurrentMemeIndex]
             } else {
                 // If we're at the end of the backstack, use the preloaded meme if available
-                imageUrl = FMTnextMemeUrl ?: getRandomMeme()
-                FMTmemeBackStack.add(imageUrl) // Add the meme to the backstack
-                FMTcurrentMemeIndex = FMTmemeBackStack.size - 1
-                FMTnextMemeUrl = null // Reset the preloaded meme
+                imageUrl = getRandomMeme()
+                FTMmemeBackStack.add(imageUrl) // Add the meme to the backstack
+                FTMcurrentMemeIndex = FTMmemeBackStack.size - 1
             }
             loadWithGlide(imageUrl, binding.imageView)
-
-            // Preload the next meme if we're at the end of the backstack
-            if (FMTcurrentMemeIndex == FMTmemeBackStack.size - 1) {
-                preloadNextMeme()
-            }
         }
     }
 
     private fun goBack() {
-        if (FMTcurrentMemeIndex > 0) {
+        if (FTMcurrentMemeIndex > 0) {
             // If we're not at the start of the backstack, move backward
-            FMTcurrentMemeIndex--
-            val imageUrl = FMTmemeBackStack[FMTcurrentMemeIndex]
+            FTMcurrentMemeIndex--
+            val imageUrl = FTMmemeBackStack[FTMcurrentMemeIndex]
             loadWithGlide(imageUrl, binding.imageView)
         } else {
             Toast.makeText(context, "No more memes to go back to", Toast.LENGTH_SHORT).show()
-        }
-
-        // If we're at the end of the backstack, there's no next meme to preload
-        if (FMTcurrentMemeIndex == FMTmemeBackStack.size - 1) {
-            FMTnextMemeUrl = null
         }
     }
 
     private fun getRandomMeme(): String {
         val randomKey = keys[Random.nextInt(keys.size)]
         return "https://findthatmeme.us-southeast-1.linodeobjects.com/$randomKey"
-    }
-
-    private fun preloadNextMeme() {
-        CoroutineScope(Dispatchers.IO).launch {
-            FMTnextMemeUrl = getRandomMeme()
-        }
     }
 
 
@@ -192,8 +193,6 @@ class FtmFragment : Fragment() {
         keys
     }
 
-
-
     private fun saveCurrentMeme() {
         val drawable = binding.imageView.drawable
         if (drawable == null) {
@@ -201,7 +200,7 @@ class FtmFragment : Fragment() {
             return
         }
 
-        val imageUrl = FMTmemeBackStack[FMTcurrentMemeIndex]
+        val imageUrl = FTMmemeBackStack[FTMcurrentMemeIndex]
         val fileExtension = when {
             imageUrl.endsWith(".gif") -> "gif"
             imageUrl.endsWith(".png") -> "png"
@@ -249,7 +248,7 @@ class FtmFragment : Fragment() {
                 return
             }
 
-            val imageUrl = FMTmemeBackStack[FMTcurrentMemeIndex]
+            val imageUrl = FTMmemeBackStack[FTMcurrentMemeIndex]
             val fileExtension = when {
                 imageUrl.endsWith(".gif") -> "gif"
                 imageUrl.endsWith(".png") -> "png"
@@ -295,6 +294,7 @@ class FtmFragment : Fragment() {
 
     private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
+            isLoading = true
             binding.progressBar.visibility = View.VISIBLE
             Glide.with(this@FtmFragment)
                 .load(imageUrl)
@@ -308,6 +308,7 @@ class FtmFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
+                        isLoading = false
                         return false
                     }
 
@@ -319,10 +320,27 @@ class FtmFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
+                        isLoading = false
                         return false
                     }
                 })
                 .into(imageView)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                if(FTMmemeBackStack.size - FTMcurrentMemeIndex < 5) {
+                    for (i in 1..(5- (FTMmemeBackStack.size - FTMcurrentMemeIndex))) {
+                        val newMemeUrl = getRandomMeme()
+                        FTMmemeBackStack.add(newMemeUrl)
+                        if (isAdded && activity != null) {
+                            Glide.with(this@FtmFragment)
+                                .load(newMemeUrl)
+                                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                                .preload()
+                            Log.i("FtmFragment", "Preloading meme: $newMemeUrl")
+                        }
+                    }
+                }
+            }
         }
     }
 

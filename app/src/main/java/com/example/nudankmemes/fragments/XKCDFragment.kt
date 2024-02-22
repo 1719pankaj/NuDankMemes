@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +15,7 @@ import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
@@ -23,7 +23,6 @@ import com.example.nudankmemes.R
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDFirstRunFlag
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDcurrentMemeIndex
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDmemeBackStack
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDnextMemeUrl
 import com.example.nudankmemes.databinding.FragmentXkcdBinding
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +39,8 @@ import java.net.URL
 class XKCDFragment : Fragment() {
 
     private lateinit var binding: FragmentXkcdBinding
+
+    private var isLoading = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentXkcdBinding.inflate(layoutInflater)
@@ -61,19 +62,27 @@ class XKCDFragment : Fragment() {
         }
 
         binding.nextBT.setOnClickListener {
-            getNextComic()
+            if (!isLoading) {
+                getNextComic()
+            }
         }
 
         binding.prevBT.setOnClickListener {
-            goBack()
+            if (!isLoading) {
+                goBack()
+            }
         }
 
         binding.shareBT.setOnClickListener {
-            shareCurrentMeme()
+            if (!isLoading) {
+                shareCurrentMeme()
+            }
         }
 
         binding.saveBT.setOnClickListener {
-            saveCurrentMeme()
+            if (!isLoading) {
+                saveCurrentMeme()
+            }
         }
 
 
@@ -188,17 +197,12 @@ class XKCDFragment : Fragment() {
                 imageUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
             } else {
                 // If we're at the end of the backstack, use the preloaded meme if available
-                imageUrl = XKCDnextMemeUrl ?: fetchNewMeme()
+                imageUrl = fetchNewMeme()
                 XKCDmemeBackStack.add(imageUrl) // Add the meme to the backstack
                 XKCDcurrentMemeIndex = XKCDmemeBackStack.size - 1
-                XKCDnextMemeUrl = null // Reset the preloaded meme
             }
             loadWithGlide(imageUrl, binding.imageView)
 
-            // Preload the next meme if we're at the end of the backstack
-            if (XKCDcurrentMemeIndex == XKCDmemeBackStack.size - 1) {
-                preloadNextMeme()
-            }
         }
     }
 
@@ -212,23 +216,12 @@ class XKCDFragment : Fragment() {
         } else {
             Toast.makeText(context, "Backstack Empty", Toast.LENGTH_SHORT).show()
         }
-
-        // If we're at the end of the backstack, there's no next meme to preload
-        if (XKCDcurrentMemeIndex == XKCDmemeBackStack.size - 1) {
-            XKCDnextMemeUrl = null
-        }
     }
 
     private suspend fun fetchNewMeme(): String {
         val latestComicNum = fetchLatestComicNum()
         val randomComicNum = (1..latestComicNum).random()
         return fetchComicImageUrl(randomComicNum)
-    }
-
-    private fun preloadNextMeme() {
-        CoroutineScope(Dispatchers.IO).launch {
-            XKCDnextMemeUrl = fetchNewMeme()
-        }
     }
 
     private suspend fun fetchLatestComicNum(): Int {
@@ -260,18 +253,18 @@ class XKCDFragment : Fragment() {
     }
 
     private fun getLatestComic() {
-    CoroutineScope(Dispatchers.Main).launch {
-        val latestComicNum = fetchLatestComicNum()
-        val imageUrl = fetchComicImageUrl(latestComicNum)
-        XKCDmemeBackStack.add(imageUrl) // Add the meme to the backstack
-        XKCDcurrentMemeIndex = XKCDmemeBackStack.size - 1 // Update the current meme index
-        loadWithGlide(imageUrl, binding.imageView)
-        preloadNextMeme()
+        CoroutineScope(Dispatchers.Main).launch {
+            val latestComicNum = fetchLatestComicNum()
+            val imageUrl = fetchComicImageUrl(latestComicNum)
+            XKCDmemeBackStack.add(imageUrl) // Add the meme to the backstack
+            XKCDcurrentMemeIndex = XKCDmemeBackStack.size - 1 // Update the current meme index
+            loadWithGlide(imageUrl, binding.imageView)
+        }
     }
-}
 
     private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
+            isLoading = true
             binding.progressBar.visibility = View.VISIBLE
             Glide.with(this@XKCDFragment)
                 .load(imageUrl)
@@ -285,6 +278,7 @@ class XKCDFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
+                        isLoading = false
                         return false
                     }
 
@@ -296,10 +290,26 @@ class XKCDFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
+                        isLoading = false
                         return false
                     }
                 })
                 .into(imageView)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                if(XKCDmemeBackStack.size - XKCDcurrentMemeIndex < 5) {
+                    for (i in 1..(5- (XKCDmemeBackStack.size - XKCDcurrentMemeIndex))) {
+                        val newMemeUrl = fetchNewMeme()
+                        XKCDmemeBackStack.add(newMemeUrl)
+                        if (isAdded && activity != null) {
+                            Glide.with(this@XKCDFragment)
+                                .load(newMemeUrl)
+                                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                                .preload()
+                        }
+                    }
+                }
+            }
         }
     }
 }

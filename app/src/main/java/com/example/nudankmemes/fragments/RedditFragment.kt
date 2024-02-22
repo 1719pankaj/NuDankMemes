@@ -21,8 +21,6 @@ import com.bumptech.glide.request.target.Target
 import com.example.nudankmemes.R
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditcurrentMemeIndex
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditmemeBackStack
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditnextMemeUrl
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditnextMemeUrls
 import com.example.nudankmemes.databinding.FragmentRedditBinding
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
@@ -183,7 +181,7 @@ class RedditFragment : Fragment() {
                 loadWithGlide(RedditmemeBackStack[RedditcurrentMemeIndex], binding.imageView)
             } else {
                 // If we're at the end of the backstack, use the preloaded memes if available
-                memeUrls = RedditnextMemeUrls ?: getRandomMemes()
+                memeUrls = getRandomMemes()
                 for (memeUrl in memeUrls) {
                     if (!RedditmemeBackStack.contains(memeUrl)) {
                         RedditmemeBackStack.add(memeUrl) // Add the meme to the backstack
@@ -192,12 +190,6 @@ class RedditFragment : Fragment() {
                         break
                     }
                 }
-                RedditnextMemeUrls = null // Reset the preloaded memes
-            }
-
-            // Preload the next memes if we're at the end of the backstack
-            if (RedditcurrentMemeIndex == RedditmemeBackStack.size - 1) {
-                preloadNextMemes()
             }
         }
     }
@@ -212,10 +204,6 @@ class RedditFragment : Fragment() {
             Toast.makeText(context, "No more memes to go back to", Toast.LENGTH_SHORT).show()
         }
 
-        // If we're at the end of the backstack, there's no next meme to preload
-        if (RedditcurrentMemeIndex == RedditmemeBackStack.size - 1) {
-            RedditnextMemeUrl = null
-        }
     }
 
     private suspend fun getRandomMemes(): List<String> {
@@ -238,12 +226,6 @@ class RedditFragment : Fragment() {
         }
     }
 
-
-    private fun preloadNextMemes() {
-        CoroutineScope(Dispatchers.IO).launch {
-            RedditnextMemeUrls = getRandomMemes()
-        }
-    }
 
     private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
