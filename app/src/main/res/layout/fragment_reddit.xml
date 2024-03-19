@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".fragments.XKCDFragment">
 
-    <com.github.chrisbanes.photoview.PhotoView
+    <com.example.nudankmemes.customViews.CustomPhotoView
         android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -18,25 +18,15 @@
         tools:ignore="ImageContrastCheck"
         tools:src="@tools:sample/avatars" />
 
-    <Button
-        android:id="@+id/prevBT"
-        android:layout_width="100dp"
-        android:layout_height="0dp"
-        android:background="@android:color/transparent"
-        app:layout_constraintStart_toStartOf="parent"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/addToFavBT"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_star"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:contentDescription="@string/previous_image"/>
-
-    <Button
-        android:id="@+id/nextBT"
-        android:layout_width="100dp"
-        android:layout_height="0dp"
-        android:background="@android:color/transparent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:contentDescription="@string/next_image"/>
+        app:layout_constraintEnd_toStartOf="@+id/saveBT"
+        tools:ignore="RedundantDescriptionCheck" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/saveBT"

@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import com.example.nudankmemes.databinding.ActivityMainBinding
 import com.example.nudankmemes.fragments.ConfigFragment
+import com.example.nudankmemes.fragments.FavouriteFragment
 import com.example.nudankmemes.fragments.FtmFragment
 import com.example.nudankmemes.fragments.RedditFragment
 import com.example.nudankmemes.fragments.XKCDFragment
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.xkcd -> replaceFragment(XKCDFragment())
                 R.id.ftm -> replaceFragment(FtmFragment())
                 R.id.dank_memes -> replaceFragment(RedditFragment())
+                R.id.fav_memes -> replaceFragment(FavouriteFragment())
                 R.id.config -> replaceFragment(ConfigFragment())
             }
             true

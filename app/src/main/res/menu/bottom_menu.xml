@@ -17,6 +17,11 @@
         android:icon="@drawable/reddit_icon"/>
 
     <item
+        android:id="@+id/fav_memes"
+        android:title="@string/fav_memes"
+        android:icon="@drawable/ic_star"/>
+
+    <item
         android:id="@+id/config"
         android:title="@string/config"
         android:icon="@drawable/config_icon"/>

@@ -1,5 +1,6 @@
 package com.example.nudankmemes.fragments
 
+import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Intent
 import android.graphics.drawable.Drawable
@@ -7,47 +8,39 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
-import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.example.nudankmemes.R
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDFirstRunFlag
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDcurrentMemeIndex
-import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDmemeBackStack
-import com.example.nudankmemes.databinding.FragmentXkcdBinding
+import com.example.nudankmemes.data.BackstackAndKeys
+import com.example.nudankmemes.data.BackstackAndKeys.Companion.FavMemesCurrentMemeIndex
+import com.example.nudankmemes.data.BackstackAndKeys.Companion.FavMemesFirstRunFlag
+import com.example.nudankmemes.data.BackstackAndKeys.Companion.FavMemesList
+import com.example.nudankmemes.databinding.FragmentFavouriteBinding
 import com.example.nudankmemes.helpers.SharedPrefManager
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
 
+class FavouriteFragment : Fragment() {
 
-class XKCDFragment : Fragment() {
-
-    private lateinit var binding: FragmentXkcdBinding
-
+    private lateinit var binding: FragmentFavouriteBinding
     private var isLoading = false
     private lateinit var sharedPrefManager: SharedPrefManager
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentXkcdBinding.inflate(layoutInflater)
-        val view = binding.root
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        binding = FragmentFavouriteBinding.inflate(layoutInflater)
 
         binding.progressBar.isIndeterminate = true
         binding.imageView.setImageResource(R.drawable.holdup)
@@ -61,21 +54,15 @@ class XKCDFragment : Fragment() {
             }
         }
 
-        if (XKCDmemeBackStack.isNotEmpty() && XKCDcurrentMemeIndex >= 0) {
-            // If there's a meme in the backstack, display it
-            loadWithGlide(XKCDmemeBackStack[XKCDcurrentMemeIndex], binding.imageView)
-        } else if (XKCDFirstRunFlag) {
-            // If it's the first run, fetch the latest comic
-            getLatestComic()
-            XKCDFirstRunFlag = false
-        } else {
-            // Otherwise, fetch the next comic
-            getNextComic()
-        }
-
         binding.shareBT.setOnClickListener {
             if (!isLoading) {
                 shareCurrentMeme()
+            }
+        }
+
+        binding.deleteFavBT.setOnClickListener {
+            if (!isLoading) {
+                deleteMeme()
             }
         }
 
@@ -85,17 +72,93 @@ class XKCDFragment : Fragment() {
             }
         }
 
-        binding.addToFavBT.setOnClickListener {
-            if (!isLoading) {
-                val currentMemeUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
-                sharedPrefManager.saveMeme(currentMemeUrl)
-            }
-        }
-
-        return view
+        return binding.root
     }
 
+    override fun onResume() {
+        super.onResume()
 
+        if(FavMemesList.isEmpty()) {
+            FavMemesList = mapToList(sharedPrefManager.getAllMemes())
+        }
+
+        if(FavMemesList.isNotEmpty()){
+            if (FavMemesList == mapToList(sharedPrefManager.getAllMemes())) {
+                if (FavMemesFirstRunFlag)
+                    loadWithGlide(FavMemesList[FavMemesCurrentMemeIndex], binding.imageView)
+                else {
+                    FavMemesFirstRunFlag = true
+                    getNextComic()
+                }
+            } else {
+                FavMemesList = mapToList(sharedPrefManager.getAllMemes())
+                if (FavMemesList.isNotEmpty()) {
+                    FavMemesCurrentMemeIndex = 0
+                    loadWithGlide(FavMemesList[FavMemesCurrentMemeIndex], binding.imageView)
+                } else {
+                    binding.imageView.setImageResource(R.drawable.holdup)
+                    binding.progressBar.visibility = View.GONE
+                }
+            }
+        } else {
+            binding.imageView.setImageResource(R.drawable.holdup)
+            binding.progressBar.visibility = View.GONE
+        }
+    }
+
+    private fun mapToList(map: Map<String, String>): ArrayList<String> {
+        val flippedMezanineMapToList = flipMap(sharedPrefManager.getAllMemes()).toList()
+        val sortedList = flippedMezanineMapToList.sortedByDescending { it.first }
+        return sortedList.map { it.second } as ArrayList<String>
+    }
+
+    private fun deleteMeme() {
+        val builder = AlertDialog.Builder(context)
+        builder.setTitle("Delete Meme")
+        builder.setMessage("Are you sure you want to un-favourite this meme?🥺")
+        builder.setPositiveButton("Delete") { dialog, _ ->
+            val imageUrl = FavMemesList[FavMemesCurrentMemeIndex]
+            sharedPrefManager.removeMeme(imageUrl)
+            FavMemesList.removeAt(FavMemesCurrentMemeIndex)
+            if (FavMemesCurrentMemeIndex > 0) FavMemesCurrentMemeIndex--
+            if (FavMemesList.isNotEmpty()) {
+                loadWithGlide(FavMemesList[FavMemesCurrentMemeIndex], binding.imageView)
+            } else {
+                binding.imageView.setImageResource(R.drawable.holdup)
+            }
+            Toast.makeText(requireContext(), "Meme Deleted", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.dismiss()
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun flipMap(map: Map<String, String>): Map<String, String> {
+        return map.map { (k, v) -> v to k }.toMap()
+    }
+
+    private fun getNextComic() {
+        if (FavMemesCurrentMemeIndex < FavMemesList.size - 1) {
+            FavMemesCurrentMemeIndex++
+            val imageUrl = FavMemesList[FavMemesCurrentMemeIndex]
+            loadWithGlide(imageUrl, binding.imageView)
+        } else {
+            Toast.makeText(context, "No more memes", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun goBack() {
+        if (FavMemesCurrentMemeIndex > 0) {
+            FavMemesCurrentMemeIndex--
+            val imageUrl = FavMemesList[FavMemesCurrentMemeIndex]
+            loadWithGlide(imageUrl, binding.imageView)
+        } else {
+            Toast.makeText(context, "Empty Backstack", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private fun saveCurrentMeme() {
         val drawable = binding.imageView.drawable
@@ -104,7 +167,7 @@ class XKCDFragment : Fragment() {
             return
         }
 
-        val imageUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
+        val imageUrl = BackstackAndKeys.FavMemesList[FavMemesCurrentMemeIndex]
         val fileExtension = when {
             imageUrl.endsWith(".gif") -> "gif"
             imageUrl.endsWith(".png") -> "png"
@@ -152,7 +215,7 @@ class XKCDFragment : Fragment() {
                 return
             }
 
-            val imageUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
+            val imageUrl = BackstackAndKeys.FavMemesList[FavMemesCurrentMemeIndex]
             val fileExtension = when {
                 imageUrl.endsWith(".gif") -> "gif"
                 imageUrl.endsWith(".png") -> "png"
@@ -196,87 +259,12 @@ class XKCDFragment : Fragment() {
         }
     }
 
-    private fun getNextComic() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val imageUrl: String
-            if (XKCDcurrentMemeIndex < XKCDmemeBackStack.size - 1) {
-                // If we're not at the end of the backstack, move forward
-                XKCDcurrentMemeIndex++
-                imageUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
-            } else {
-                // If we're at the end of the backstack, use the preloaded meme if available
-                imageUrl = fetchNewMeme()
-                XKCDmemeBackStack.add(imageUrl) // Add the meme to the backstack
-                XKCDcurrentMemeIndex = XKCDmemeBackStack.size - 1
-            }
-            loadWithGlide(imageUrl, binding.imageView)
-
-        }
-    }
-
-
-    private fun goBack() {
-        if (XKCDcurrentMemeIndex > 0) {
-            // If we're not at the start of the backstack, move backward
-            XKCDcurrentMemeIndex--
-            val imageUrl = XKCDmemeBackStack[XKCDcurrentMemeIndex]
-            loadWithGlide(imageUrl, binding.imageView)
-        } else {
-            Toast.makeText(context, "Backstack Empty", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private suspend fun fetchNewMeme(): String {
-        val latestComicNum = fetchLatestComicNum()
-        val randomComicNum = (1..latestComicNum).random()
-        return fetchComicImageUrl(randomComicNum)
-    }
-
-    private suspend fun fetchLatestComicNum(): Int {
-        return withContext(Dispatchers.IO) {
-            val url = URL("https://xkcd.com/info.0.json")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            val reader = BufferedReader(InputStreamReader(connection.inputStream))
-            val response = reader.readText()
-            reader.close()
-            connection.disconnect()
-            val jsonObject = JSONObject(response)
-            jsonObject.getInt("num")
-        }
-    }
-
-    private suspend fun fetchComicImageUrl(comicNum: Int): String {
-        return withContext(Dispatchers.IO) {
-            val url = URL("https://xkcd.com/$comicNum/info.0.json")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            val reader = BufferedReader(InputStreamReader(connection.inputStream))
-            val response = reader.readText()
-            reader.close()
-            connection.disconnect()
-            val jsonObject = JSONObject(response)
-            jsonObject.getString("img")
-        }
-    }
-
-    private fun getLatestComic() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val latestComicNum = fetchLatestComicNum()
-            val imageUrl = fetchComicImageUrl(latestComicNum)
-            XKCDmemeBackStack.add(imageUrl) // Add the meme to the backstack
-            XKCDcurrentMemeIndex = XKCDmemeBackStack.size - 1 // Update the current meme index
-            loadWithGlide(imageUrl, binding.imageView)
-        }
-    }
-
     private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
-            isLoading = true
             binding.progressBar.visibility = View.VISIBLE
-            Glide.with(this@XKCDFragment)
+            Glide.with(this@FavouriteFragment)
                 .load(imageUrl)
-                .placeholder(R.drawable.xkcd_waiting)
+                .placeholder(R.drawable.reddit_waiting)
                 .fitCenter()
                 .listener(object : RequestListener<Drawable> {
                     override fun onLoadFailed(
@@ -286,7 +274,6 @@ class XKCDFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
-                        isLoading = false
                         return false
                     }
 
@@ -298,26 +285,11 @@ class XKCDFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
-                        isLoading = false
                         return false
                     }
                 })
                 .into(imageView)
-
-            CoroutineScope(Dispatchers.IO).launch {
-                if(XKCDmemeBackStack.size - XKCDcurrentMemeIndex < 5) {
-                    for (i in 1..(5- (XKCDmemeBackStack.size - XKCDcurrentMemeIndex))) {
-                        val newMemeUrl = fetchNewMeme()
-                        XKCDmemeBackStack.add(newMemeUrl)
-                        if (isAdded && activity != null) {
-                            Glide.with(this@XKCDFragment)
-                                .load(newMemeUrl)
-                                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-                                .preload()
-                        }
-                    }
-                }
-            }
         }
     }
+
 }

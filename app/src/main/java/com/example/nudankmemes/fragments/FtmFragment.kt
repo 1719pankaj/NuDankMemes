@@ -28,6 +28,7 @@ import com.example.nudankmemes.data.BackstackAndKeys.Companion.FTMfirstRunFlag
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.FTMmemeBackStack
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.keys
 import com.example.nudankmemes.databinding.FragmentFtmBinding
+import com.example.nudankmemes.helpers.SharedPrefManager
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,11 +46,14 @@ import kotlin.random.Random
 class FtmFragment : Fragment() {
 
     private lateinit var binding: FragmentFtmBinding
+    private lateinit var sharedPrefManager: SharedPrefManager
     private var isLoading = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentFtmBinding.inflate(layoutInflater)
         val view = binding.root
+
+        sharedPrefManager = SharedPrefManager(requireContext())
 
         if(FTMfirstRunFlag) {
             binding.progressBar.visibility = View.VISIBLE
@@ -74,15 +78,12 @@ class FtmFragment : Fragment() {
                     getNextComic()
                 }
 
-                binding.nextBT.setOnClickListener {
+                binding.imageView.setOnViewTapListener { vw, x, y ->
                     if (!isLoading) {
-                        getNextComic()
-                    }
-                }
-
-                binding.prevBT.setOnClickListener {
-                    if (!isLoading) {
-                        goBack()
+                        when {
+                            x <= 200 -> goBack()
+                            x >= 650 -> getNextComic()
+                        }
                     }
                 }
 
@@ -97,6 +98,13 @@ class FtmFragment : Fragment() {
                         saveCurrentMeme()
                     }
                 }
+
+                binding.addToFavBT.setOnClickListener {
+                    if (!isLoading) {
+                        val currentMemeUrl = FTMmemeBackStack[FTMcurrentMemeIndex]
+                        sharedPrefManager.saveMeme(currentMemeUrl)
+                    }
+                }
             }
         } else {
 
@@ -108,15 +116,12 @@ class FtmFragment : Fragment() {
                 getNextComic()
             }
 
-            binding.nextBT.setOnClickListener {
+            binding.imageView.setOnViewTapListener { vw, x, y ->
                 if (!isLoading) {
-                    getNextComic()
-                }
-            }
-
-            binding.prevBT.setOnClickListener {
-                if (!isLoading) {
-                    goBack()
+                    when {
+                        x <= 200 -> goBack()
+                        x >= 650 -> getNextComic()
+                    }
                 }
             }
 
@@ -130,6 +135,13 @@ class FtmFragment : Fragment() {
                 if (!isLoading) {
                     saveCurrentMeme()
                 }
+            }
+
+            binding.addToFavBT.setOnClickListener {
+                    if (!isLoading) {
+                        val currentMemeUrl = FTMmemeBackStack[FTMcurrentMemeIndex]
+                        sharedPrefManager.saveMeme(currentMemeUrl)
+                    }
             }
         }
 

@@ -19,9 +19,11 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
 import com.example.nudankmemes.R
+import com.example.nudankmemes.data.BackstackAndKeys
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditcurrentMemeIndex
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditmemeBackStack
 import com.example.nudankmemes.databinding.FragmentRedditBinding
+import com.example.nudankmemes.helpers.SharedPrefManager
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,12 +40,19 @@ class RedditFragment : Fragment() {
 
     private lateinit var binding: FragmentRedditBinding
 
+    private var isLoading = false
+
+
+    private lateinit var sharedPrefManager: SharedPrefManager
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentRedditBinding.inflate(inflater, container, false)
         val view = binding.root
 
         binding.progressBar.isIndeterminate = true
         binding.imageView.setImageResource(R.drawable.holdup)
+
+        sharedPrefManager = SharedPrefManager(requireContext())
 
         if (RedditmemeBackStack.isNotEmpty() && RedditcurrentMemeIndex >= 0) {
             // If there's a meme in the backstack, display it
@@ -53,12 +62,11 @@ class RedditFragment : Fragment() {
             getNextComic()
         }
 
-        binding.nextBT.setOnClickListener {
-            getNextComic()
-        }
-
-        binding.prevBT.setOnClickListener {
-            goBack()
+        binding.imageView.setOnViewTapListener { vw, x, y ->
+            when {
+                x <= 200 -> goBack()
+                x >= 650 -> getNextComic()
+            }
         }
 
         binding.shareBT.setOnClickListener {
@@ -67,6 +75,13 @@ class RedditFragment : Fragment() {
 
         binding.saveBT.setOnClickListener {
             saveCurrentMeme()
+        }
+
+        binding.addToFavBT.setOnClickListener {
+            if(!isLoading) {
+                val currentMemeUrl = RedditmemeBackStack[RedditcurrentMemeIndex]
+                sharedPrefManager.saveMeme(currentMemeUrl)
+            }
         }
 
         return view
@@ -233,6 +248,7 @@ class RedditFragment : Fragment() {
 
     private fun loadWithGlide(imageUrl: String, imageView: PhotoView) {
         if (isAdded && activity != null) {
+            isLoading = true
             binding.progressBar.visibility = View.VISIBLE
             Glide.with(this@RedditFragment)
                 .load(imageUrl)
@@ -246,6 +262,7 @@ class RedditFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
+                        isLoading = false
                         return false
                     }
 
@@ -257,6 +274,7 @@ class RedditFragment : Fragment() {
                         isFirstResource: Boolean
                     ): Boolean {
                         binding.progressBar.visibility = View.GONE
+                        isLoading = false
                         return false
                     }
                 })

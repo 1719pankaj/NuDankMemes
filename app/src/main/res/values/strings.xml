@@ -10,5 +10,6 @@
     <string name="xkcd">XKCD</string>
     <string name="ftm">FTM</string>
     <string name="dankmemes">DankMemes</string>
+    <string name="fav_memes">❤️😁</string>
     <string name="config">Config</string>
 </resources>

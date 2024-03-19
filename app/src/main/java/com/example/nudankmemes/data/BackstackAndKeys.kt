@@ -8,7 +8,11 @@ class BackstackAndKeys {
         var FTMcurrentMemeIndex = -1
 
         val RedditmemeBackStack = ArrayList<String>()
-        var RedditcurrentMemeIndex = -1
+        var RedditcurrentMemeIndex = 0
+
+        var FavMemesFirstRunFlag = false
+        var FavMemesCurrentMemeIndex = -1
+        var FavMemesList = ArrayList<String>()
 
         var XKCDFirstRunFlag = true
         val XKCDmemeBackStack = ArrayList<String>()
