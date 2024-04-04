@@ -24,6 +24,7 @@ import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDFirstRunFlag
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDcurrentMemeIndex
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.XKCDmemeBackStack
 import com.example.nudankmemes.databinding.FragmentXkcdBinding
+import com.example.nudankmemes.global.Variables.Companion.config_compatibility_mode_buttons
 import com.example.nudankmemes.helpers.SharedPrefManager
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
@@ -54,12 +55,6 @@ class XKCDFragment : Fragment() {
 
         sharedPrefManager = SharedPrefManager(requireContext())
 
-        binding.imageView.setOnViewTapListener { vw, x, y ->
-            when {
-                x <= 200 -> goBack()
-                x >= 650 -> getNextComic()
-            }
-        }
 
         if (XKCDmemeBackStack.isNotEmpty() && XKCDcurrentMemeIndex >= 0) {
             // If there's a meme in the backstack, display it
@@ -93,6 +88,37 @@ class XKCDFragment : Fragment() {
         }
 
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if(config_compatibility_mode_buttons) {
+            binding.nextBT.visibility = View.VISIBLE
+            binding.prevBT.visibility = View.VISIBLE
+            binding.legacyModeTV.visibility = View.VISIBLE
+            binding.nextBT.setOnClickListener {
+                if (!isLoading) {
+                    getNextComic()
+                }
+            }
+            binding.prevBT.setOnClickListener {
+                if (!isLoading) {
+                    goBack()
+                }
+            }
+        } else {
+            binding.nextBT.visibility = View.GONE
+            binding.prevBT.visibility = View.GONE
+            binding.legacyModeTV.visibility = View.GONE
+            binding.imageView.setOnViewTapListener { vw, x, y ->
+                when {
+                    x <= 200 -> goBack()
+                    x >= 650 -> getNextComic()
+                }
+            }
+        }
+
     }
 
 

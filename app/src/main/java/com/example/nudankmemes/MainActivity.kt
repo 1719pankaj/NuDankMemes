@@ -13,6 +13,7 @@ import com.example.nudankmemes.fragments.FavouriteFragment
 import com.example.nudankmemes.fragments.FtmFragment
 import com.example.nudankmemes.fragments.RedditFragment
 import com.example.nudankmemes.fragments.XKCDFragment
+import com.example.nudankmemes.global.Functions.Companion.loadCompatModeSharedPrefs
 
 
 class MainActivity : AppCompatActivity() {
@@ -24,6 +25,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
         setContentView(view)
+
+        loadCompatModeSharedPrefs(this)
 
         replaceFragment(XKCDFragment())
         binding.bottomNavigationView.background = null

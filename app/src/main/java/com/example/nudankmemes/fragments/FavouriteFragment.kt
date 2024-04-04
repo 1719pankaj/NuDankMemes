@@ -25,6 +25,7 @@ import com.example.nudankmemes.data.BackstackAndKeys.Companion.FavMemesCurrentMe
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.FavMemesFirstRunFlag
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.FavMemesList
 import com.example.nudankmemes.databinding.FragmentFavouriteBinding
+import com.example.nudankmemes.global.Variables
 import com.example.nudankmemes.helpers.SharedPrefManager
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
@@ -47,13 +48,6 @@ class FavouriteFragment : Fragment() {
 
         sharedPrefManager = SharedPrefManager(requireContext())
 
-        binding.imageView.setOnViewTapListener { vw, x, y ->
-            when {
-                x <= 200 -> goBack()
-                x >= 650 -> getNextComic()
-            }
-        }
-
         binding.shareBT.setOnClickListener {
             if (!isLoading) {
                 shareCurrentMeme()
@@ -75,8 +69,12 @@ class FavouriteFragment : Fragment() {
         return binding.root
     }
 
+
+
     override fun onResume() {
         super.onResume()
+
+        changeClickListenersForCompatMode()
 
         if(FavMemesList.isEmpty()) {
             FavMemesList = mapToList(sharedPrefManager.getAllMemes())
@@ -103,6 +101,34 @@ class FavouriteFragment : Fragment() {
         } else {
             binding.imageView.setImageResource(R.drawable.holdup)
             binding.progressBar.visibility = View.GONE
+        }
+    }
+
+    private fun changeClickListenersForCompatMode() {
+        if(Variables.config_compatibility_mode_buttons) {
+            binding.nextBT.visibility = View.VISIBLE
+            binding.prevBT.visibility = View.VISIBLE
+            binding.legacyModeTV.visibility = View.VISIBLE
+            binding.nextBT.setOnClickListener {
+                if (!isLoading) {
+                    getNextComic()
+                }
+            }
+            binding.prevBT.setOnClickListener {
+                if (!isLoading) {
+                    goBack()
+                }
+            }
+        } else {
+            binding.nextBT.visibility = View.GONE
+            binding.prevBT.visibility = View.GONE
+            binding.legacyModeTV.visibility = View.GONE
+            binding.imageView.setOnViewTapListener { vw, x, y ->
+                when {
+                    x <= 200 -> goBack()
+                    x >= 650 -> getNextComic()
+                }
+            }
         }
     }
 

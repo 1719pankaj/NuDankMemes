@@ -23,6 +23,7 @@ import com.example.nudankmemes.data.BackstackAndKeys
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditcurrentMemeIndex
 import com.example.nudankmemes.data.BackstackAndKeys.Companion.RedditmemeBackStack
 import com.example.nudankmemes.databinding.FragmentRedditBinding
+import com.example.nudankmemes.global.Variables
 import com.example.nudankmemes.helpers.SharedPrefManager
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.CoroutineScope
@@ -62,13 +63,6 @@ class RedditFragment : Fragment() {
             getNextComic()
         }
 
-        binding.imageView.setOnViewTapListener { vw, x, y ->
-            when {
-                x <= 200 -> goBack()
-                x >= 650 -> getNextComic()
-            }
-        }
-
         binding.shareBT.setOnClickListener {
             shareCurrentMeme()
         }
@@ -85,6 +79,37 @@ class RedditFragment : Fragment() {
         }
 
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if(Variables.config_compatibility_mode_buttons) {
+            binding.nextBT.visibility = View.VISIBLE
+            binding.prevBT.visibility = View.VISIBLE
+            binding.legacyModeTV.visibility = View.VISIBLE
+            binding.nextBT.setOnClickListener {
+                if (!isLoading) {
+                    getNextComic()
+                }
+            }
+            binding.prevBT.setOnClickListener {
+                if (!isLoading) {
+                    goBack()
+                }
+            }
+        } else {
+            binding.nextBT.visibility = View.GONE
+            binding.prevBT.visibility = View.GONE
+            binding.legacyModeTV.visibility = View.GONE
+            binding.imageView.setOnViewTapListener { vw, x, y ->
+                when {
+                    x <= 200 -> goBack()
+                    x >= 650 -> getNextComic()
+                }
+            }
+        }
+
     }
 
     private fun saveCurrentMeme() {
