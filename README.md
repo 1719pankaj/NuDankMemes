@@ -1,4 +1,4 @@
-# DankMemes2 - Android App ![Build status](https://github.com/wallabag/android-app/workflows/CI/badge.svg?branch=master)
+# NuDankMemes - Android App ![Build status](https://github.com/wallabag/android-app/workflows/CI/badge.svg?branch=master)
 
 <img src="https://github.com/1719pankaj/Dank-Memes-2/blob/main/Images/meme_icon.png" align="left"
 width="200" hspace="10" vspace="10">
